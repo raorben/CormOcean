@@ -11,26 +11,33 @@ library(tidyr)
 # Link to local Box Sync folder ---- 
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
 #change path to ornitela_ftp on box server
-if(Sys.info()[7]=="rachaelorben") {usrdir<-'/Users/rachaelorben/Box/DASHCAMS/';fold<-"data/ornitela_last24h/"}
-if(Sys.info()[7]=="tragabigzanda") {usrdir<-'/Users/tragabigzanda/Box Sync/DASHCAMS/';fold<-"data/ornitela_last24h/"}
+
+args = commandArgs(trailingOnly=TRUE)
+
+datadir<-args[1] #/Users/rachaelorben/Box/DASHCAMS/data/ornitela_last24h/
+deplydir<-args[2] #/Users/rachaelorben/Box/DASHCAMS/data/Field Data/
+savedir<-args[3] #/Users/rachaelorben/Box/DASHCAMS/zTagStatus/
+
+#if(Sys.info()[7]=="rachaelorben") {usrdir<-'/Users/rachaelorben/Box/DASHCAMS/';fold<-"data/ornitela_last24h/"}
+#if(Sys.info()[7]=="tragabigzanda") {usrdir<-'/Users/tragabigzanda/Box Sync/DASHCAMS/';fold<-"data/ornitela_last24h/"}
 
 
 #  Pulls in deployment matrix ---------------------------------------------
-deploy_matrix<-read.csv(paste0(usrdir,"data/Field Data/DASHCAMS_Deployment_Field_Data.csv"))
+deploy_matrix<-read.csv(paste0(deplydir,"DASHCAMS_Deployment_Field_Data.csv"))
 str(deploy_matrix)
 deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime)%>%
   filter(is.na(TagSerialNumber)==FALSE)
 deploy_matrix$DeploymentStartDatetime<-mdy_hm(deploy_matrix$DeploymentStartDatetime)
 
 # Find file names with data -------------------------------------------
-my_files <- fileSnapshot(path=paste0(usrdir,fold))
+my_files <- fileSnapshot(path=datadir)
 Files<-rownames(my_files$info[1])[which(my_files$info[1] > 309)] #selects files with >309 bytes (1 header row)
 
 # Cycles through data files to find tags active in last week------------
 sel_files<-NULL
 for (i in 1:length(Files)){
-  nL <- countLines(paste0(usrdir,fold,Files[i]))
-  df <- read.csv(paste0(usrdir,fold,Files[i]), header=FALSE, skip=nL-1)
+  nL <- countLines(paste0(datadir,Files[i]))
+  df <- read.csv(paste0(datadir,Files[i]), header=FALSE, skip=nL-1)
   df$V2<-ymd_hms(df$V2)
   today<-Sys.time()
   if(df$V2[1]>today-604800){sel_files<-c(sel_files,Files[i])} #selects files with a last date within 7 days of today
@@ -39,7 +46,7 @@ for (i in 1:length(Files)){
 # Cycles through selected data files ----------------------------------------------
 Birds<-NULL 
 for (i in 1:length(sel_files)){
-  dat<-read.csv(file = paste0(usrdir,fold,sel_files[i]),sep = ",") #could switch to fread to be quicker...
+  dat<-read.csv(file = paste0(datadir,sel_files[i]),sep = ",") #could switch to fread to be quicker...
   dat<-rename(dat,lat="Latitude")
   dat<-rename(dat,lon="Longitude")
   dat<-rename(dat,alt="MSL_altitude_m")
@@ -90,7 +97,7 @@ wide_dat<-dat_info%>%pivot_wider(names_from = datatype, values_from = no_rows)
 SUMDAT<-left_join(sumDat,wide_dat,by="tagID")
 
 SUMDAT[SUMDAT==-Inf]<-NA
-write.csv(SUMDAT,paste0(usrdir,"zTagStatus","/1WeekStats_",date(today),".csv"))
+write.csv(SUMDAT,paste0(savedir,"/1WeekStats_",date(today),".csv"))
 
 # error checking plots ----------------------------------------------------
 dt<-Sys.time()
@@ -129,7 +136,7 @@ temp_plot<-ggplot()+
   ylab("")+ # hide default y-axis label
   theme(legend.position = "none")+
   guides(color = guide_legend(override.aes = list(size = 5)))
-ggsave(temp_plot,filename = paste0(usrdir,"zTagStatus/",birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
+ggsave(temp_plot,filename = paste0(savedir,birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
        height=4,width=8,device = "png")
 }
 
@@ -159,5 +166,5 @@ temp_plot<-ggplot()+
   theme(legend.title = element_blank(),
         legend.text = element_text(size=5))+
   guides(color = guide_legend(override.aes = list(size = 2)))
-ggsave(temp_plot,filename = paste0(usrdir,"zTagStatus/1wk_map_",IDs[i],".png"),height=4,width=8,device = "png")
+ggsave(temp_plot,filename = paste0(savedir,"1wk_map_",IDs[i],".png"),height=4,width=8,device = "png")
 }
