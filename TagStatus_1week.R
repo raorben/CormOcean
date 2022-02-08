@@ -14,7 +14,7 @@ library(tidyr)
 
 args = commandArgs(trailingOnly=TRUE)
 
-datadir<-args[1] #/Users/rachaelorben/Box/DASHCAMS/data/ornitela_last24h/
+datadir<-args[1] #/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp/
 deplydir<-args[2] #/Users/rachaelorben/Box/DASHCAMS/data/Field Data/
 savedir<-args[3] #/Users/rachaelorben/Box/DASHCAMS/zTagStatus/
 
