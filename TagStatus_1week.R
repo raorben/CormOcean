@@ -12,7 +12,7 @@ library(tidyr)
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
 
 if(Sys.info()[4]=="benthos") {
-  datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp/'
+  datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp_data/'
   savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
   deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv'
 }
