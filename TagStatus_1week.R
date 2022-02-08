@@ -11,12 +11,12 @@ library(tidyr)
 # Link to local Box Sync folder ---- 
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
 #change path to ornitela_ftp on box server
-if(Sys.info()[7]=="rachaelorben") {usrdir<-'/Users/rachaelorben/Box/DASHCAMS/data/';fold<-"ornitela_last24h/"}
-if(Sys.info()[7]=="tragabigzanda") {usrdir<-'/Users/tragabigzanda/Box Sync/DASHCAMS/data/';fold<-"ornitela_last24h/"}
+if(Sys.info()[7]=="rachaelorben") {usrdir<-'/Users/rachaelorben/Box/DASHCAMS/';fold<-"data/ornitela_last24h/"}
+if(Sys.info()[7]=="tragabigzanda") {usrdir<-'/Users/tragabigzanda/Box Sync/DASHCAMS/';fold<-"data/ornitela_last24h/"}
 
 
 #  Pulls in deployment matrix ---------------------------------------------
-deploy_matrix<-read.csv(paste0(usrdir,"Field Data/DASHCAMS_Deployment_Field_Data.csv"))
+deploy_matrix<-read.csv(paste0(usrdir,"data/Field Data/DASHCAMS_Deployment_Field_Data.csv"))
 str(deploy_matrix)
 deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime)%>%
   filter(is.na(TagSerialNumber)==FALSE)
