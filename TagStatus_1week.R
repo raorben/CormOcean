@@ -39,7 +39,7 @@ for (i in 1:length(Files)){
 # Cycles through selected data files ----------------------------------------------
 Birds<-NULL 
 for (i in 1:length(sel_files)){
-  dat<-read.csv(file = paste0(usrdir,fold,sel_files[i]),sep = ",")
+  dat<-read.csv(file = paste0(usrdir,fold,sel_files[i]),sep = ",") #could switch to fread to be quicker...
   dat<-rename(dat,lat="Latitude")
   dat<-rename(dat,lon="Longitude")
   dat<-rename(dat,alt="MSL_altitude_m")
