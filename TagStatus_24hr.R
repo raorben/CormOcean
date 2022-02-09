@@ -7,21 +7,26 @@ library(stringr)
 library(R.utils)
 library(tidyr)
 
-
 # Link to local Box Sync folder ---- 
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
 
-if(Sys.info()[4]=="benthos") {
-  datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp_data/'
-  savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
-  deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv'
-}
+args = commandArgs(trailingOnly=TRUE)
+datadir<-args[1] #/Box/DASHCAMS/data/ornitela_last24h/
+deplymatrix<-args[2] #/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv
+savedir<-args[3] #/Box/DASHCAMS/zTagStatus/
 
-if(Sys.info()[7]=="rachaelorben") {
-  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_last24h/'
-  savedir<-'/Users/rachaelorben/zTagStatus_24hr/'
-  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
-}
+
+#if(Sys.info()[4]=="benthos") {
+#  datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp_data/'
+#  savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
+#  deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv'
+#}
+
+#if(Sys.info()[7]=="rachaelorben") {
+#  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_last24h/'
+#  savedir<-'/Users/rachaelorben/zTagStatus_24hr/'
+#  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
+#}
 
 
 #  Pulls in deployment matrix ---------------------------------------------
