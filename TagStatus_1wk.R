@@ -10,11 +10,12 @@ library(tidyr)
 # Link to local Box Sync folder ---- 
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
 
+if(Sys.info()[4]=="benthos") {
 args = commandArgs(trailingOnly=TRUE)
-datadir<-args[1] #/Box/DASHCAMS/data/ornitela_last24h/
+datadir<-args[1] #/home/DASHCAMS/data/ornitela_ftp_data/
 deplymatrix<-args[2] #/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv
-savedir<-args[3] #/Box/DASHCAMS/zTagStatus/
-
+savedir<-args[3] #/home/DASHCAMS/zTagStatus/
+}
 
 #if(Sys.info()[4]=="benthos") {
 #  datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp_data/'
@@ -22,11 +23,11 @@ savedir<-args[3] #/Box/DASHCAMS/zTagStatus/
 #  deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv'
 #}
 
-#if(Sys.info()[7]=="rachaelorben") {
-#  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_last24h/'
-#  savedir<-'/Users/rachaelorben/zTagStatus_24hr/'
-#  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
-#}
+if(Sys.info()[7]=="rachaelorben") {
+  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp_data/'
+  savedir<-'/Users/rachaelorben/zTagStatus/'
+  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
+}
 
 
 #  Pulls in deployment matrix ---------------------------------------------
@@ -38,54 +39,61 @@ deploy_matrix$DeploymentStartDatetime<-mdy_hm(deploy_matrix$DeploymentStartDatet
 
 # Find file names with data -------------------------------------------
 my_files <- fileSnapshot(path=datadir)
-Files<-rownames(my_files$info[1])[which(my_files$info[1] > 309)] #selects files with >309 bytes (1 header row)
+Files1<-rownames(my_files$info[1])[which(my_files$info[1] < 309)] #selects files with >309 bytes (1 header row)
 
-# Cycles through data files to find tags active in last week------------
+today<-Sys.time()
+wk2<-today-(604800*2)
+dates<-my_files$info[5]
+IDx<-which(dates$ctime>wk2)
+Files2<-rownames(my_files$info[5])[IDx]#removes all files not written in last two weeks
+Files<-Files2[Files2 %in% Files1 == FALSE] #I think this should remove empty files written within last two weeks
+
+# Cycles through data files to find data written in last week------------
 sel_files<-NULL
 for (i in 1:length(Files)){
   nL <- countLines(paste0(datadir,Files[i]))
   df <- read.csv(paste0(datadir,Files[i]), header=FALSE, skip=nL-1)
-  df$V2<-ymd_hms(df$V2)
+  df$V3<-ymd_hms(df$V3)
   today<-Sys.time()
-  if(df$V2[1]>today-604800){sel_files<-c(sel_files,Files[i])} #selects files with a last date within 7 days of today
+  if(df$V3[1]>today-604800){sel_files<-c(sel_files,Files[i])} #selects files with a last date within 7 days of today
 }
 
 # Cycles through selected data files ----------------------------------------------
 Birds<-NULL 
 for (i in 1:length(sel_files)){
+  
+  fileN<-sel_files[i]
+  tagID<-sapply(strsplit(sel_files[i], split='_', fixed=TRUE), function(x) (x[1]))
+  deply_sel<-deploy_matrix[deploy_matrix$TagSerialNumber==tagID[1],]
+  n<-nrow(deply_sel)
+  if(n==0) next #if the tag isn't in the deployment matrix is will be skipped - important for skipping testing tags etc. 
+  
+  deply_sel<-deply_sel[n,] #picks the most recent deployment of that tag
   dat<-read.csv(file = paste0(datadir,sel_files[i]),sep = ",") #could switch to fread to be quicker...
+  
+  dat$Project_ID<-deply_sel$Project_ID
+  dat$tagID<-tagID
+  
   dat<-rename(dat,lat="Latitude")
   dat<-rename(dat,lon="Longitude")
   dat<-rename(dat,alt="MSL_altitude_m")
   dat[is.na(dat)==TRUE]<-NA
   
-  fileN<-Files[i]
-  A<-sapply(strsplit(Files[i], split='_', fixed=TRUE), function(x) (x[1]))
-  dat$tagID<-sapply(strsplit(A, split='.', fixed=TRUE), function(x) (x[1]))
-  
-  deply_sel<-deploy_matrix[deploy_matrix$TagSerialNumber==dat$tagID[1],]
-  n<-nrow(deply_sel)
-  if(n==0) next #if the tag isn't in the deployment matrix is will be skipped - important for skipping testing tags etc. 
-  deply_sel<-deply_sel[n,]
-  dat$Project_ID<-deply_sel$Project_ID
-  
   dat$datetime<-ymd_hms(dat$UTC_timestamp)
-  dat$oid<-1:nrow(dat)
+  dat$Foid<-1:nrow(dat)
   
   today<-Sys.time()
-  dat_sel<-dat[dat$datetime>(today-604800),]
+  dat_sel<-dat[dat$datetime>(today-604800),] #trims to last week of data
   Birds<-rbind(Birds,dat_sel)
 }
-
-#str(Birds)
 
 #remove duplicate GPS points 
 Birds<-Birds%>%group_by(device_id,datetime)%>%
   distinct(device_id,datetime, .keep_all = TRUE)%>%
-  arrange(datetime)
+  arrange(datetime) #arranges by time, could scramble data >1HZ a little bit
 
 # quick summary of the bird data
-sumDat<-Birds%>%group_by(Project_ID,tagID)%>%
+sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
   summarise(minDt=min(datetime),
             maxDt=max(datetime),
             maxDepth=max(depth_m,na.rm=TRUE),
@@ -93,8 +101,8 @@ sumDat<-Birds%>%group_by(Project_ID,tagID)%>%
             n_GPS=n_distinct(lat),
             uBat=mean(U_bat_mV,na.rm=TRUE),
             uTemp=mean(ext_temperature_C,na.rm=TRUE),
-            uBond=mean(conductivity_mS.cm,na.rm=TRUE))%>%
-  mutate(dur_hr=round(maxDt-minDt,2)) 
+            uCond=mean(conductivity_mS.cm,na.rm=TRUE))%>%
+  mutate(dur=round(maxDt-minDt,2)) 
 
 dat_info<-Birds%>%
   group_by(tagID,datatype) %>%
@@ -143,14 +151,14 @@ for (i in 1:length(IDs)){
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
     guides(color = guide_legend(override.aes = list(size = 5)))
-  ggsave(temp_plot,filename = paste0(savedir,"/",birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
+  ggsave(temp_plot,filename = paste0(savedir,"/1wks_",birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
          height=4,width=8,device = "png")
 }
 
 #map location, color by date
 w2hr<-map_data('world')
 
-Birds_gps<-Birds%>%filter(lat!=0)%>%filter(is.na(lat)==FALSE)
+Birds_gps<-Birds%>%filter(lat!=0)%>%filter(is.na(lat)==FALSE)%>%filter(lon!=0)
 Birds_gps$device_id<-as.factor(Birds_gps$device_id)
 
 IDs<-unique(Birds_gps$Project_ID)

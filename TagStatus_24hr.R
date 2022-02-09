@@ -10,23 +10,18 @@ library(tidyr)
 # Link to local Box Sync folder ---- 
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
 
+if(Sys.info()[4]=="benthos") {
 args = commandArgs(trailingOnly=TRUE)
 datadir<-args[1] #/Box/DASHCAMS/data/ornitela_last24h/
 deplymatrix<-args[2] #/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv
 savedir<-args[3] #/Box/DASHCAMS/zTagStatus/
+}
 
-
-#if(Sys.info()[4]=="benthos") {
-#  datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp_data/'
-#  savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
-#  deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv'
-#}
-
-#if(Sys.info()[7]=="rachaelorben") {
-#  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_last24h/'
-#  savedir<-'/Users/rachaelorben/zTagStatus_24hr/'
-#  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
-#}
+if(Sys.info()[7]=="rachaelorben") {
+  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_last24h/'
+  savedir<-'/Users/rachaelorben/zTagStatus/'
+  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
+}
 
 
 #  Pulls in deployment matrix ---------------------------------------------
@@ -59,8 +54,8 @@ for (i in 1:length(sel_files)){
   dat<-rename(dat,alt="MSL_altitude_m")
   dat[is.na(dat)==TRUE]<-NA
   
-  fileN<-Files[i]
-  A<-sapply(strsplit(Files[i], split='_', fixed=TRUE), function(x) (x[1]))
+  fileN<-sel_files[i]
+  A<-sapply(strsplit(sel_files[i], split='_', fixed=TRUE), function(x) (x[1]))
   dat$tagID<-sapply(strsplit(A, split='.', fixed=TRUE), function(x) (x[1]))
   
   deply_sel<-deploy_matrix[deploy_matrix$TagSerialNumber==dat$tagID[1],]
@@ -93,7 +88,7 @@ sumDat<-Birds%>%group_by(Project_ID,tagID)%>%
               n_GPS=n_distinct(lat),
               uBat=mean(U_bat_mV,na.rm=TRUE),
               uTemp=mean(ext_temperature_C,na.rm=TRUE),
-              uBond=mean(conductivity_mS.cm,na.rm=TRUE))%>%
+              uCond=mean(conductivity_mS.cm,na.rm=TRUE))%>%
     mutate(dur_hr=round(maxDt-minDt,2)) 
 
 dat_info<-Birds%>%
@@ -104,7 +99,7 @@ wide_dat<-dat_info%>%pivot_wider(names_from = datatype, values_from = no_rows)
 SUMDAT<-left_join(sumDat,wide_dat,by="tagID")
 
 SUMDAT[SUMDAT==-Inf]<-NA
-write.csv(x=SUMDAT,file = paste0(savedir,"/1WeekStats_",date(today),".csv"))
+write.csv(x=SUMDAT,file = paste0(savedir,"/24hrStats_",date(today),".csv"))
 
 # error checking plots ----------------------------------------------------
 dt<-Sys.time()
@@ -143,7 +138,7 @@ temp_plot<-ggplot()+
   ylab("")+ # hide default y-axis label
   theme(legend.position = "none")+
   guides(color = guide_legend(override.aes = list(size = 5)))
-ggsave(temp_plot,filename = paste0(savedir,"/",birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
+ggsave(temp_plot,filename = paste0(savedir,"/24hr_",birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
        height=4,width=8,device = "png")
 }
 
@@ -173,6 +168,6 @@ temp_plot<-ggplot()+
   theme(legend.title = element_blank(),
         legend.text = element_text(size=5))+
   guides(color = guide_legend(override.aes = list(size = 2)))
-ggsave(temp_plot,filename = paste0(savedir,"/1wk_map_",IDs[i],".png"),height=4,width=8,device = "png")
+ggsave(temp_plot,filename = paste0(savedir,"/24hr_map_",IDs[i],".png"),height=4,width=8,device = "png")
 }
 
