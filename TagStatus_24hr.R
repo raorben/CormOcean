@@ -33,17 +33,7 @@ deploy_matrix$DeploymentStartDatetime<-mdy_hm(deploy_matrix$DeploymentStartDatet
 
 # Find file names with data -------------------------------------------
 my_files <- fileSnapshot(path=datadir)
-Files<-rownames(my_files$info[1])[which(my_files$info[1] > 309)] #selects files with >309 bytes (1 header row)
-
-# Cycles through data files to find tags active in last week------------
-sel_files<-NULL
-for (i in 1:length(Files)){
-  nL <- countLines(paste0(datadir,Files[i]))
-  df <- read.csv(paste0(datadir,Files[i]), header=FALSE, skip=nL-1)
-  df$V2<-ymd_hms(df$V2)
-  today<-Sys.time()
-  if(df$V2[1]>today-604800){sel_files<-c(sel_files,Files[i])} #selects files with a last date within 7 days of today
-}
+sel_files<-rownames(my_files$info[1])[which(my_files$info[1] > 309)] #selects files with >309 bytes (1 header row)
 
 # Cycles through selected data files ----------------------------------------------
 Birds<-NULL 
@@ -68,7 +58,7 @@ for (i in 1:length(sel_files)){
   dat$oid<-1:nrow(dat)
   
   today<-Sys.time()
-  dat_sel<-dat[dat$datetime>(today-604800),]
+  dat_sel<-dat[dat$datetime>(today-172800),] #selects out last two days of data (if there)
   Birds<-rbind(Birds,dat_sel)
 }
 
