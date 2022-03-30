@@ -41,7 +41,6 @@ for (i in 1:length(sel_files)){
   dat<-read.csv(file = paste0(datadir,sel_files[i]),sep = ",") #could switch to fread to be quicker...
   dat<-rename(dat,lat="Latitude")
   dat<-rename(dat,lon="Longitude")
-  dat<-rename(dat,alt="MSL_altitude_m")
   dat[is.na(dat)==TRUE]<-NA
   
   fileN<-sel_files[i]
