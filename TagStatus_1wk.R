@@ -33,7 +33,7 @@ if(Sys.info()[7]=="rachaelorben") {
 #  Pulls in deployment matrix ---------------------------------------------
 deploy_matrix<-read.csv(deplymatrix)
 #str(deploy_matrix)
-deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime)%>%
+deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime,Deployment_End_Short)%>%
   filter(is.na(TagSerialNumber)==FALSE)
 deploy_matrix$DeploymentStartDatetime<-mdy_hm(deploy_matrix$DeploymentStartDatetime)
 
@@ -66,15 +66,18 @@ for (i in 1:length(sel_files)){
   
   fileN<-sel_files[i]
   tagID<-sapply(strsplit(sel_files[i], split='_', fixed=TRUE), function(x) (x[1]))
+  
   deply_sel<-deploy_matrix[deploy_matrix$TagSerialNumber==tagID[1],]
+  
   n<-nrow(deply_sel)
   if(n==0) next #if the tag isn't in the deployment matrix is will be skipped - important for skipping testing tags etc. 
-  
+
   deply_sel<-deply_sel[n,] #picks the most recent deployment of that tag
   dat<-read.csv(file = paste0(datadir,sel_files[i]),sep = ",") #could switch to fread to be quicker...
   
   dat$Project_ID<-deply_sel$Project_ID
   dat$tagID<-tagID
+  dat$DeployEndShort<-deply_sel$Deployment_End_Short
   
   dat<-rename(dat,lat="Latitude")
   dat<-rename(dat,lon="Longitude")
@@ -83,15 +86,43 @@ for (i in 1:length(sel_files)){
   dat$datetime<-ymd_hms(dat$UTC_timestamp)
   dat$Foid<-1:nrow(dat)
   
+  dat_gps<-dat%>%filter(!is.na(lat))
+  if (nrow(dat_gps)==0)   {today<-Sys.time(); dat$GPS_surfacedrifts<-NA
+  dat_sel<-dat[dat$datetime>(today-604800),] #trims to last week of data
+  Birds<-rbind(Birds,dat_sel)}
+  if (nrow(dat_gps)==0) next
+    
+  dat_gps$PointDur <- NA
+  
+  # force difftime in secs & finds surface drifts (diff of <2 for more than 5 seconds)
+  dat_gps$PointDur <- abs(as.numeric(difftime(time1 =  dat_gps$datetime,
+                                       time2 = lead(dat_gps$datetime),
+                                       units = "secs")))
+  
+  out <- data.frame(unclass(rle(dat_gps$PointDur<=2)))
+  out$pos <- head(cumsum(c(1, out$lengths)), -1)
+  out.s<-out[out$lengths>=5  & out$values,c("pos", "lengths")]
+  
+  dat$GPS_surfacedrifts<-0
+  for (j in 1:nrow(out.s)){
+    if (nrow(out.s)==0) next
+    info<-out.s[j,]
+    idx1<-dat_gps$Foid[info$pos]
+    idx2<-dat_gps$Foid[info$pos+info$lengths]
+    dat$GPS_surfacedrifts[idx1:idx2]<-1
+  }
+  
   today<-Sys.time()
   dat_sel<-dat[dat$datetime>(today-604800),] #trims to last week of data
   Birds<-rbind(Birds,dat_sel)
 }
 
+
 #remove duplicate GPS points 
 Birds<-Birds%>%group_by(device_id,datetime)%>%
   distinct(device_id,datetime, .keep_all = TRUE)%>%
   arrange(datetime) #arranges by time, could scramble data >1HZ a little bit
+
 
 # quick summary of the bird data
 sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
@@ -102,38 +133,46 @@ sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
             n_GPS=n_distinct(lat),
             uBat=mean(U_bat_mV,na.rm=TRUE),
             uTemp=mean(ext_temperature_C,na.rm=TRUE),
-            uCond=mean(conductivity_mS.cm,na.rm=TRUE))%>%
+            uCond=mean(conductivity_mS.cm,na.rm=TRUE),
+            GPS_surfacedrift_pts=sum(GPS_surfacedrifts))%>%
   mutate(dur=round(maxDt-minDt,2)) 
 
 dat_info<-Birds%>%
-  group_by(tagID,datatype) %>%
+  group_by(tagID,datatype, DeployEndShort) %>%
   summarise(no_rows = length(datatype))
 
 wide_dat<-dat_info%>%pivot_wider(names_from = datatype, values_from = no_rows)
 SUMDAT<-left_join(sumDat,wide_dat,by="tagID")
 
 SUMDAT[SUMDAT==-Inf]<-NA
+SUMDAT <- SUMDAT %>%
+  select(DeployEndShort, everything())
+
 write.csv(x=SUMDAT,file = paste0(savedir,"/1WeekStats_",date(today),".csv"))
 
 # error checking plots ----------------------------------------------------
 dt<-Sys.time()
+
+#vectoral_sum for calibration
+Birds$vectoral_sum<-(Birds$acc_x^2+Birds$acc_y^2+Birds$acc_z^2)^.05
 
 IDs<-unique(Birds$device_id)
 for (i in 1:length(IDs)){
   birdy<-Birds[Birds$device_id==IDs[i],]
   Mdt<-min(birdy$datetime)
   
-  labs <- data.frame(variable = c("a", "b","c","d","e"), 
-                     title_wd = c("Depth", "Temp","Lat","Bat","Solar"), 
-                     y = c(0,10,40,80,110),
-                     dt=c(rep(Mdt-10000,5))) # vertical position for labels
+  labs <- data.frame(variable = c("a", "b","c","d","e","f","g"), 
+                     title_wd = c("Depth", "Temp","Lat","Drift","Bat","Solar","VecSum"), 
+                     y = c(-5,10,40,50,80,110, 125),
+                     dt=c(rep(Mdt-10000,7))) # vertical position for labels
   
   temp_plot<-ggplot()+
     #depth=blue
     geom_point(data=birdy%>%filter(is.na(depth_m)==FALSE)%>%filter(depth_m!=0),
                aes(x=datetime,y=-depth_m),size=.01, color="blue")+
     #lat=black
-    geom_point(data=birdy,aes(x=datetime,y=lat),size=.01, color="black")+
+    geom_point(data=birdy,aes(x=datetime,y=abs(lat)),size=.01, color="black")+
+    geom_point(data=birdy%>%filter(GPS_surfacedrifts==1),aes(x=datetime,y=lat+2),size=.02, color="darkgreen")+
     #temperature=purple
     geom_point(data=birdy%>%filter(ext_temperature_C<100)%>%filter(ext_temperature_C>0),
                aes(x=datetime,y=ext_temperature_C),size=.01,color="purple")+
@@ -145,14 +184,15 @@ for (i in 1:length(IDs)){
     geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="red",size=.01)+
     #solar=yellow
     geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=solar_I_mA+101),color="goldenrod2",size=.01)+
+    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=vectoral_sum+125),color="darkturquoise",size=.01)+
     scale_x_datetime(date_labels = "%b %d") +
     geom_text(data = labs, angle = 90, size=2,# add rotated text near y-axis
               aes(x = dt, y = y, label = title_wd, color = title_wd)) +
-    scale_color_manual(values=c("red","blue" ,"black","goldenrod2","purple")) +
+    scale_color_manual(values=c("red","blue" ,"darkgreen","black","goldenrod2","purple","darkturquoise")) +
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
     guides(color = guide_legend(override.aes = list(size = 5)))
-  ggsave(temp_plot,filename = paste0(savedir,"/1wks_",birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
+  ggsave(temp_plot,filename = paste0(savedir,"/1wks_",birdy$DeployEndShort[1],birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
          height=4,width=8,device = "png")
 }
 
