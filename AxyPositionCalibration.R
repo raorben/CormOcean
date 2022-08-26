@@ -161,7 +161,7 @@ for (i in 1:length(tIDs)){
   
   
   Csegs<-ggplot()+
-    geom_point(data=calDat,aes(x=x,y=vectoral_sum, group=calib.seg, color=calib.seg))+
+    geom_point(data=calDat,aes(x=UTC_datetime,y=vectoral_sum, group=calib.seg, color=calib.seg))+
     ylim(.9,2.1)
   Csegs
   ggsave(Csegs,
