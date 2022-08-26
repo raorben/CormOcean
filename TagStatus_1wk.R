@@ -15,6 +15,7 @@ args = commandArgs(trailingOnly=TRUE)
 datadir<-args[1] #/home/DASHCAMS/data/ornitela_ftp_data/
 deplymatrix<-args[2] #/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv
 savedir<-args[3] #/home/DASHCAMS/zTagStatus/
+source('/home/DASHCAMS/git/CormOcean/MakeDive.R') #does this work?!
 }
 
 #if(Sys.info()[4]=="benthos") {
@@ -27,6 +28,7 @@ if(Sys.info()[7]=="rachaelorben") {
   datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp_data/'
   savedir<-'/Users/rachaelorben/zTagStatus/'
   deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
+  source('/Users/rachaelorben/git_repos/CormOcean/MakeDive.R')
 }
 
 
@@ -124,6 +126,32 @@ Birds<-Birds%>%group_by(device_id,datetime)%>%
   arrange(datetime) #arranges by time, could scramble data >1HZ a little bit
 
 
+# identify dives ----------------------------------------------------------
+Birds_dpth<-Birds%>%filter(is.na(depth_m)==FALSE)
+Birds_dpth$tdiff_sec <-difftime(Birds_dpth$datetime, lag(Birds_dpth$datetime, 1),units = "secs")
+
+id_num <- which(colnames(Birds_dpth) == "tagID") 
+dt_num <- which(colnames(Birds_dpth) == "datetime") 
+dp_num <- which(colnames(Birds_dpth) == "depth_m") 
+td_num <- which(colnames(Birds_dpth) == "tdiff_sec") 
+
+Birds_dpth<-MakeDive(Birds_dpth,idCol=id_num, #column index with unique ID
+                   dtCol=dt_num, #column index with datetime
+                   depthCol=dp_num, #column index with depth
+                   tdiffCol=td_num, #column index with time difference in seconds
+                   DepthCutOff=1, #depth that dives happen below (meters)
+                   DiveDepthYes=3, #dives need to reach 3 meters to be considered a dive event
+                   TimeDiffAllowed_sec=2, #consecutive points need to have a time difference <2 to be in the same event
+                   NumLocCut=3) #dives need to contain three points to be considered a dive, could change this to a duration
+  
+Birds_dpth$date<-date(Birds_dpth$datetime)
+
+dsum<-Birds_dpth%>%group_by(ID,date)%>%
+  summarise(n=n_distinct(divedatYN))
+
+dsum_weekly<-dsum%>%group_by(ID)%>%
+  summarize(udives_day=floor(mean(n)))
+
 # quick summary of the bird data
 sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
   summarise(minDt=min(datetime),
@@ -136,6 +164,8 @@ sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
             uCond=mean(conductivity_mS.cm,na.rm=TRUE),
             GPS_surfacedrift_pts=sum(GPS_surfacedrifts))%>%
   mutate(dur=round(maxDt-minDt,2)) 
+
+sumDat<-left_join(sumDat,dsum_weekly,by=c("tagID"="ID"))
 
 dat_info<-Birds%>%
   group_by(tagID,datatype, DeployEndShort) %>%
@@ -156,6 +186,8 @@ dt<-Sys.time()
 #vectoral_sum for calibration
 Birds$vectoral_sum<-(Birds$acc_x^2+Birds$acc_y^2+Birds$acc_z^2)^.05
 
+dsum$datetime<-ymd_hms(paste(dsum$date,"23:59:00"))
+
 IDs<-unique(Birds$device_id)
 for (i in 1:length(IDs)){
   birdy<-Birds[Birds$device_id==IDs[i],]
@@ -170,6 +202,7 @@ for (i in 1:length(IDs)){
     #depth=blue
     geom_point(data=birdy%>%filter(is.na(depth_m)==FALSE)%>%filter(depth_m!=0),
                aes(x=datetime,y=-depth_m),size=.01, color="blue")+
+    geom_point(data=dsum%>%filter(ID==IDs[i]),aes(x=datetime,y=n), size=3,alpha=.5, color="blue")+
     #lat=black
     geom_point(data=birdy,aes(x=datetime,y=abs(lat)),size=.01, color="black")+
     geom_point(data=birdy%>%filter(GPS_surfacedrifts==1),aes(x=datetime,y=lat+2),size=.02, color="darkgreen")+
