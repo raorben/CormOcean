@@ -157,11 +157,11 @@ sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
   summarise(minDt=min(datetime),
             maxDt=max(datetime),
             maxDepth=max(depth_m,na.rm=TRUE),
-            uDepth=mean(depth_m,na.rm=TRUE),
+            uDepth=round(mean(depth_m,na.rm=TRUE),2),
             n_GPS=n_distinct(lat),
-            uBat=mean(U_bat_mV,na.rm=TRUE),
-            uTemp=mean(ext_temperature_C,na.rm=TRUE),
-            uCond=mean(conductivity_mS.cm,na.rm=TRUE),
+            uBat=round(mean(U_bat_mV,na.rm=TRUE)),
+            uTemp=round(mean(ext_temperature_C,na.rm=TRUE),2),
+            uCond=round(mean(conductivity_mS.cm,na.rm=TRUE),2),
             GPS_surfacedrift_pts=sum(GPS_surfacedrifts))%>%
   mutate(dur=round(maxDt-minDt,2)) 
 
