@@ -184,7 +184,7 @@ write.csv(x=SUMDAT,file = paste0(savedir,"/1WeekStats_",date(today),".csv"))
 dt<-Sys.time()
 
 #vectoral_sum for calibration
-Birds$vectoral_sum<-(Birds$acc_x^2+Birds$acc_y^2+Birds$acc_z^2)^0.05
+Birds$vectoral_sum<-((Birds$acc_x^2+Birds$acc_y^2+Birds$acc_z^2)^0.5)*.1 #should be .5 but 0.5 plots better
 
 dsum$datetime<-ymd_hms(paste(dsum$date,"23:59:00"))
 
@@ -200,6 +200,7 @@ for (i in 1:length(IDs)){
   
   temp_plot<-ggplot()+
     #depth=blue
+    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=vectoral_sum),color="darkturquoise",size=.01)+
     geom_point(data=birdy%>%filter(is.na(depth_m)==FALSE)%>%filter(depth_m!=0),
                aes(x=datetime,y=-depth_m),size=.01, color="blue")+
     geom_point(data=dsum%>%filter(ID==IDs[i]),aes(x=datetime,y=n), size=3,alpha=.5, color="blue")+
@@ -217,7 +218,6 @@ for (i in 1:length(IDs)){
     geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="red",size=.01)+
     #solar=yellow
     geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=solar_I_mA+101),color="goldenrod2",size=.01)+
-    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=vectoral_sum+125),color="darkturquoise",size=.01)+
     scale_x_datetime(date_labels = "%b %d") +
     geom_text(data = labs, angle = 90, size=2,# add rotated text near y-axis
               aes(x = dt, y = y, label = title_wd, color = title_wd)) +
@@ -252,9 +252,13 @@ for (i in 1:length(IDs)){
     ylab("Latitude")+
     coord_fixed(ratio=1.7,xlim = c(x_min,x_max),ylim=c(y_min,y_max))+
     theme_bw()+
-    theme(legend.title = element_blank(),
-          legend.text = element_text(size=5))+
-    guides(color = guide_legend(override.aes = list(size = 2)))
+    theme(legend.position = "none",
+          text = element_text(size = 6),
+          axis.text = element_text(size = 4))+
+    #theme(legend.title = element_blank(),
+    #     legend.text = element_text(size=5))+
+    guides(color = guide_legend(override.aes = list(size = 2)))+
+    facet_wrap(~device_id, nrow = 2)
   ggsave(temp_plot,filename = paste0(savedir,"/1wk_map_",IDs[i],".png"),height=4,width=8,device = "png")
 }
 
