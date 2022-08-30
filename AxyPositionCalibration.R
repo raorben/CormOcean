@@ -24,8 +24,8 @@ if(Sys.info()[7]=="rachaelorben") {
 cal_idx<-read.csv(paste0(usrdir,"Accel_Cal_Index.csv"))
 cal_idx<-cal_idx%>%filter(calprocessed_yn=="n")%>%select(-calprocessed_yn)
 
-cal_idx$Start_UTC<-mdy_hm(cal_idx$cal_start_datetime_local)-(cal_idx$utc_offset*3600)
-cal_idx$End_UTC<-mdy_hm(cal_idx$cal_end_datetime_local)-(cal_idx$utc_offset*3600)
+cal_idx$Start_UTC<-mdy_hm(cal_idx$cal_start_datetime_local)-(cal_idx$utc_offset*3600) #hour before
+cal_idx$End_UTC<-mdy_hm(cal_idx$cal_end_datetime_local)-(cal_idx$utc_offset*3600) #hour after
 names(cal_idx)
 cal_idx$dt_ch<-paste0(year(cal_idx$Start_UTC),
                       str_pad(month(cal_idx$Start_UTC),2,pad=0),
@@ -70,7 +70,7 @@ rm(calib_dat)
 caldat$X<-caldat$acc_x; caldat$Y<-caldat$acc_y; caldat$Z<-caldat$acc_z; 
 
 #vectoral_sum for calibration
-caldat$vectoral_sum<-(caldat$X^2+caldat$Y^2+caldat$Z^2)^.05
+caldat$vectoral_sum<-(caldat$X^2+caldat$Y^2+caldat$Z^2)^0.5
 
 
 # find beginning and end of calibration data chunck _approx! --------------
@@ -119,7 +119,7 @@ calib.dat<-data.frame()
 tIDs<-unique(calib.info$TagID)
 
 quartz()
-for (i in 1:length(tIDs)){
+for (i in 2:length(tIDs)){
   B1<-caldat%>%filter(device_id==tIDs[i])
   Idx<-calib.info%>%filter(TagID==tIDs[i])
   calDat<-B1[Idx$beg:Idx$end_pt,]

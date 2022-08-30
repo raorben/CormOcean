@@ -184,7 +184,7 @@ write.csv(x=SUMDAT,file = paste0(savedir,"/1WeekStats_",date(today),".csv"))
 dt<-Sys.time()
 
 #vectoral_sum for calibration
-Birds$vectoral_sum<-(Birds$acc_x^2+Birds$acc_y^2+Birds$acc_z^2)^.05
+Birds$vectoral_sum<-(Birds$acc_x^2+Birds$acc_y^2+Birds$acc_z^2)^0.5
 
 dsum$datetime<-ymd_hms(paste(dsum$date,"23:59:00"))
 
