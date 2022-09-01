@@ -15,7 +15,7 @@ args = commandArgs(trailingOnly=TRUE)
 datadir<-args[1] #/home/DASHCAMS/data/ornitela_ftp_data/
 deplymatrix<-args[2] #/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv
 savedir<-args[3] #/home/DASHCAMS/zTagStatus/
-source('/home/DASHCAMS/git/CormOcean/MakeDive.R') #does this work?!
+source('/home/DASHCAMS/git/CormOcean/MakeDive.R') 
 }
 
 #if(Sys.info()[4]=="benthos") {
@@ -257,8 +257,7 @@ for (i in 1:length(IDs)){
           axis.text = element_text(size = 4))+
     #theme(legend.title = element_blank(),
     #     legend.text = element_text(size=5))+
-    guides(color = guide_legend(override.aes = list(size = 2)))+
-    facet_wrap(~device_id, nrow = 2)
+    guides(color = guide_legend(override.aes = list(size = 2)))
   ggsave(temp_plot,filename = paste0(savedir,"/1wk_map_",IDs[i],".png"),height=4,width=8,device = "png")
 }
 
