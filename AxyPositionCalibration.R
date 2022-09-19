@@ -20,6 +20,12 @@ if(Sys.info()[7]=="rachaelorben") {
   deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
 }
 
+if(Sys.info()[7]=="alexapiggot") {
+  usrdir<-"/Users/rachaelorben/Box/DASHCAMS/data/Calibration_Data_Accel/"
+  datdir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp_data'
+  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
+}
+
 # find calibration data ----------------------------------------------------------
 cal_idx<-read.csv(paste0(usrdir,"Accel_Cal_Index.csv"))
 cal_idx<-cal_idx%>%filter(calprocessed_yn=="n")%>%select(-calprocessed_yn)
