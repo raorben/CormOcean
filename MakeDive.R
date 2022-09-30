@@ -91,6 +91,8 @@ MakeDive<-function(tracks,
     
     print(nrow(dSum))
     
+    if (nrow(dSum)==0) next
+    
     for (k in 1:nrow(dSum)){
       print(k)
       BirdSub_dive<-BirdSub%>%filter(divedatID==dSum$divedatID[k])

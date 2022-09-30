@@ -252,12 +252,12 @@ for (i in 1:length(IDs)){
     ylab("Latitude")+
     coord_fixed(ratio=1.7,xlim = c(x_min,x_max),ylim=c(y_min,y_max))+
     theme_bw()+
-    #theme(legend.position = "none",
-    #      text = element_text(size = 6),
-    #      axis.text = element_text(size = 4))+
-    theme(legend.title = element_blank(),
-         legend.text = element_text(size=5))+
-    guides(color = guide_legend(override.aes = list(size = 2)))#+
+    theme(legend.position = "none",
+          text = element_text(size = 6),
+          axis.text = element_text(size = 4))+
+    #theme(legend.title = element_blank(),
+    #     legend.text = element_text(size=5))+
+    guides(color = guide_legend(override.aes = list(size = 2)))+
     #facet_wrap(~device_id, nrow=2)
   ggsave(temp_plot,filename = paste0(savedir,"/1wk_map_",IDs[i],".png"),height=4,width=8,device = "png")
 }
