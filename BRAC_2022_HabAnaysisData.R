@@ -27,7 +27,7 @@ if(Sys.info()[4]=="benthos") {
 
 if(Sys.info()[7]=="rachaelorben") {
   datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp_data/'
-  savedir<-'/Users/rachaelorben/zTagStatus/'
+  savedir<-'/Users/rachaelorben/Box/DASHCAMS/data/'
   deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
   source('/Users/rachaelorben/git_repos/CormOcean/MakeDive.R')
 }
@@ -47,7 +47,7 @@ dm<-deploy_matrix%>%filter(Project_ID=="USACRBR22")
 tag_ids<-dm$TagSerialNumber
 
 my_files <- fileSnapshot(path=datadir)
-Files1<-rownames(my_files$info) 
+Files1<-dataframe(rownames(my_files$info))
 Files<-Files1[Files1 %in% Files1 == tag_ids]
 
 lapply(Files1, function(u) tag_ids[str_detect(Files1, tag_ids)])
@@ -78,5 +78,5 @@ for (i in 1:nrow(files.sel)){
   Birds<-rbind(Birds,dat)
 }
   
-saveRDS(Birds,"/Users/rachaelorben/Box/DASHCAMS/data/BRAC_2022.rds")
+saveRDS(Birds,paste0(savedir,"BRAC_2022.rds")
   

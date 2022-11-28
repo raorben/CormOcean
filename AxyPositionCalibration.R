@@ -47,9 +47,9 @@ Files<-list.files(datdir,pattern = ".csv",full.names = TRUE)
 calib_dat<-NULL
 for (j in 1:nrow(cal_idx)){
   
-  a<-Files[str_detect(Files, cal_idx$file1[j], negate = FALSE)]
+  c<-Files[str_detect(Files, cal_idx$file1[j], negate = FALSE)]
   b<-Files[str_detect(Files, cal_idx$file2[j], negate = FALSE)]
-  a<-rbind(a,b)
+  a<-rbind(c,b)
   
   if (length(a)<1){print (paste0("missing! ",cal_idx$file1[j]))}
   if (length(a)<1) next
@@ -67,7 +67,7 @@ calib_dat$date<-date(calib_dat$UTC_datetime)
 caldat<-NULL
 for (j in 1:nrow(cal_idx)){
   tag<-calib_dat%>%filter(device_id==cal_idx$tag_id[j])%>%
-    filter(UTC_datetime>cal_idx$Start_UTC[j]-36000)%>%
+    filter(UTC_datetime>cal_idx$Start_UTC[j]-860000)%>%
     filter(UTC_datetime<cal_idx$End_UTC[j]+36000)
   caldat<-rbind(caldat,tag)
 }
@@ -116,7 +116,7 @@ write.csv(calib.info,paste0(usrdir,"/CalibrationChunck_",dt,".csv"))
 
 calib.info$diff<-abs(calib.info$end_pt-calib.info$beg_pt)
 
-calib.info<-calib.info%>%filter(diff>300) #removes tags without calibration data
+calib.info<-calib.info%>%filter(diff<300) #removes tags without calibration data
 
 
 
@@ -125,7 +125,7 @@ calib.dat<-data.frame()
 tIDs<-unique(calib.info$TagID)
 
 quartz()
-for (i in 2:length(tIDs)){
+for (i in 1:length(tIDs)){
   B1<-caldat%>%filter(device_id==tIDs[i])
   Idx<-calib.info%>%filter(TagID==tIDs[i])
   calDat<-B1[Idx$beg:Idx$end_pt,]
