@@ -57,7 +57,7 @@ for (i in 1:length(sel_files)){
   dat$oid<-1:nrow(dat)
   
   today<-Sys.time()
-  #dat_sel<-dat[dat$datetime>(today-172800),] #selects out last two days of data (if there)
+  dat_sel<-dat[dat$datetime>(today-172800),] #selects out last two days of data (if there)
   Birds<-rbind(Birds,dat_sel)
 }
 
