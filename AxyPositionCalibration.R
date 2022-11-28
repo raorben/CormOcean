@@ -4,9 +4,6 @@ library(dplyr)
 library(data.table) #rename
 library(stringr)
 
-#library(R.utils)
-#library(tidyr)
-
 
 # Axcelerometer calibrations
 # Garde B, Wilson RP, Fell A, Cole N, Tatayah V, Holton MD, Rose KAR, Metcalfe RS, 
@@ -20,15 +17,22 @@ if(Sys.info()[7]=="rachaelorben") {
   deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
 }
 
-if(Sys.info()[7]=="alexapiggot") {
+if(Sys.info()[7]=="alexapiggot") { #adjust this to be the name of your computer when you run "Sys.info()[7]"
   usrdir<-"/Users/rachaelorben/Box/DASHCAMS/data/Calibration_Data_Accel/"
   datdir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp_data'
   deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
 }
 
 # find calibration data ----------------------------------------------------------
+# this section uses the file "Accel_Cal_Index.csv" that is stored in BOX. 
+# You need to update it with the logger information and calibration dates before running the code.
+
+# The below uses the calibration date to make a download file name so you can find the data. The method kind of works, 
+# but only if the data was uploaded the day of calibration or the day after. This hasn't always been the case. There is probably a better way to find the data you want. 
+# See the "TagStatus_1wk.R" for a different way to find the more recent data. That code could be repurposed here to make a wider date window. 
+
 cal_idx<-read.csv(paste0(usrdir,"Accel_Cal_Index.csv"))
-cal_idx<-cal_idx%>%filter(calprocessed_yn=="n")%>%select(-calprocessed_yn)
+cal_idx<-cal_idx%>%filter(calprocessed_yn=="n")%>%select(-calprocessed_yn) #filters out IDs that need the calibrarion data processed.
 
 cal_idx$Start_UTC<-mdy_hm(cal_idx$cal_start_datetime_local)-(cal_idx$utc_offset*3600) #hour before
 cal_idx$End_UTC<-mdy_hm(cal_idx$cal_end_datetime_local)-(cal_idx$utc_offset*3600) #hour after
@@ -73,7 +77,7 @@ for (j in 1:nrow(cal_idx)){
 }
 
 rm(calib_dat)
-caldat$X<-caldat$acc_x; caldat$Y<-caldat$acc_y; caldat$Z<-caldat$acc_z; 
+caldat$X<-caldat$acc_x; caldat$Y<-caldat$acc_y; caldat$Z<-caldat$acc_z; #renames columns
 
 #vectoral_sum for calibration
 caldat$vectoral_sum<-(caldat$X^2+caldat$Y^2+caldat$Z^2)^0.5
@@ -118,7 +122,8 @@ calib.info$diff<-abs(calib.info$end_pt-calib.info$beg_pt)
 
 calib.info<-calib.info%>%filter(diff<300) #removes tags without calibration data
 
-
+# Finds the 6 calibration segments ----------------------------------------
+# you may want to change this to save the output for each tag separately so that it is easier to find those data. 
 
 calib.info.SixSegs<-data.frame()
 calib.dat<-data.frame()
@@ -179,20 +184,22 @@ for (i in 1:length(tIDs)){
   if(A==1){Cdat$quality<-"good"}
   if(A==2){Cdat$quality<-"poor"}
   
-  calib.info.SixSegs<-rbind(calib.info.SixSegs, Cdat)
+  calib.info.SixSegs<-rbind(calib.info.SixSegs, Cdat) #this is what you would need to save - I think
+  #saveRDS(alib.info.SixSegs,paste0(usrdir,"/CalibrationProcessing/",dt,"_",tIDs[i],"_Calibration_SegID_data.csv")) #maybe something like this
   calib.dat<-rbind(calib.dat, calDat)
 }
 
 
-write.csv(calib.dat,paste0(usrdir,"/CalibrationProcessing/Calibration_SegID_data_",dt,".csv"))
+#write.csv(calib.dat,paste0(usrdir,"/CalibrationProcessing/Calibration_SegID_data_",dt,".csv"))
 saveRDS(calib.dat,paste0(usrdir,"/CalibrationProcessing/",dt,"_Calibration_SegID_data.rda"))
 
 
 # Correct calibration data segment and plot -------------------------------
-Files<-list.files(datdir,pattern = "_Calibration_SegID_data.rda",full.names = TRUE)
+Files<-list.files(datdir,pattern = "_Calibration_SegID_data.csv",full.names = TRUE) #this could be adjusted to pull in all the loggers
 
+for (i in 1:length(Files)){
 
-calib.dat<-readRDS(Files[j])
+calib.dat<-readRDS(Files[i])
 names(calib.dat)
 
 corrections<-calib.dat%>%filter(is.na(calib.seg)==FALSE)%>%
@@ -204,9 +211,9 @@ corrections<-calib.dat%>%filter(is.na(calib.seg)==FALSE)%>%
 
 corrections$axis<-str_remove(corrections$calib.seg, "[12]")
 corrections$seg<-str_remove(corrections$calib.seg, "[XYZ]")
-corrections
+#this needs to be finished and results saved
 
-
+}
 
 
 
