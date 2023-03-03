@@ -3,9 +3,11 @@ library(lubridate)
 library(dplyr)
 library(data.table) #rename
 library(stringr)
-#library(argosfilter)
 library(R.utils)
 library(tidyr)
+
+if(require("argosfilter")==FALSE) install.packages("argosfilter")
+library(argosfilter)
 
 # Link to local Box Sync folder ---- 
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
@@ -34,10 +36,11 @@ if(Sys.info()[7]=="rachaelorben") {
 
 #  Pulls in deployment matrix ---------------------------------------------
 deploy_matrix<-read.csv(deplymatrix)
-#str(deploy_matrix)
-deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime,Deployment_End_Short)%>%
+deploy_matrix$DeploymentStartDatetime<-mdy_hm(deploy_matrix$DeploymentStartDatetime)-(deploy_matrix$UTC_offset_deploy*60*60)
+deploy_matrix$DeploymentEndDatetime_UTC<-mdy_hm(deploy_matrix$DeploymentEndDatetime_UTC)
+deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime,Deployment_End_Short,DeploymentEndDatetime_UTC)%>%
   filter(is.na(TagSerialNumber)==FALSE)
-deploy_matrix$DeploymentStartDatetime<-mdy_hm(deploy_matrix$DeploymentStartDatetime)
+
 
 # Find file names with data -------------------------------------------
 my_files <- fileSnapshot(path=datadir)
@@ -76,6 +79,11 @@ for (i in 1:length(sel_files)){
 
   deply_sel<-deply_sel[n,] #picks the most recent deployment of that tag
   dat<-read.csv(file = paste0(datadir,sel_files[i]),sep = ",") #could switch to fread to be quicker...
+  
+  deply_sel[deply_sel$DeploymentEndDatetime_UTC<deply_sel$DeploymentEndDatetime_UTC,]
+ 
+  if(is.na(deply_sel$DeploymentEndDatetime_UTC)==FALSE) deply_sel<-deply_sel[deply_sel$DeploymentEndDatetime_UTC<deply_sel$DeploymentEndDatetime_UTC,]
+  if(nrow(deply_sel)==0) next
   
   dat$Project_ID<-deply_sel$Project_ID
   dat$tagID<-tagID
@@ -190,13 +198,14 @@ dsum$datetime<-ymd_hms(paste(dsum$date,"23:59:00"))
 
 IDs<-unique(Birds$device_id)
 for (i in 1:length(IDs)){
+  
   birdy<-Birds[Birds$device_id==IDs[i],]
   Mdt<-min(birdy$datetime)
   
-  labs <- data.frame(variable = c("a", "b","c","d","e","f","g"), 
-                     title_wd = c("Depth", "Temp","Lat","Drift","Bat","Solar","VecSum"), 
-                     y = c(-5,10,40,50,80,110, 125),
-                     dt=c(rep(Mdt-10000,7))) # vertical position for labels
+  labs <- data.frame(variable = c("a", "b","bb","c","d","e","f","g"), 
+                     title_wd = c("Depth", "Temp","Con","Lat","Drift","Bat","Solar","VecSum"), 
+                     y = c(-5,10,25,40,50,80,110, 125),
+                     dt=c(rep(Mdt-10000,8))) # vertical position for labels
   
   temp_plot<-ggplot()+
     #depth=blue
@@ -210,9 +219,9 @@ for (i in 1:length(IDs)){
     #temperature=purple
     geom_point(data=birdy%>%filter(ext_temperature_C<100)%>%filter(ext_temperature_C>0),
                aes(x=datetime,y=ext_temperature_C),size=.01,color="purple")+
-    #conductivity=orange
-    #geom_point(data=birdy%>%filter(is.na(conductivity_mS.cm)==FALSE),
-    #           aes(x=datetime,y=log(conductivity_mS.cm)),size=.01,color="orange")+
+    #conductivity=
+    geom_point(data=birdy%>%filter(is.na(conductivity_mS.cm)==FALSE),
+               aes(x=datetime,y=(conductivity_mS.cm)),size=.01,color="orange")+
     #battery=red
     geom_path(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="grey")+
     geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="red",size=.01)+
@@ -221,7 +230,7 @@ for (i in 1:length(IDs)){
     scale_x_datetime(date_labels = "%b %d") +
     geom_text(data = labs, angle = 90, size=2,# add rotated text near y-axis
               aes(x = dt, y = y, label = title_wd, color = title_wd)) +
-    scale_color_manual(values=c("red","blue" ,"darkgreen","black","goldenrod2","purple","darkturquoise")) +
+    scale_color_manual(values=c("red","orange","blue" ,"darkgreen","black","goldenrod2","purple","darkturquoise")) +
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
     guides(color = guide_legend(override.aes = list(size = 5)))
@@ -238,16 +247,29 @@ Birds_gps$device_id<-as.factor(Birds_gps$device_id)
 IDs<-unique(Birds_gps$Project_ID)
 for (i in 1:length(IDs)){
   birdies<-Birds_gps[Birds_gps$Project_ID==IDs[i],]
-  y_min<-min(birdies$lat)-.25
-  y_max<-max(birdies$lat)+.25
+  birds<-droplevels(unique(birdies$device_id))
   
-  x_min<-min(birdies$lon)-.25
-  x_max<-max(birdies$lon)+.25
+  locs<-NULL
+  for (j in 1:length(birds)){
+    Locs1<-birdies%>%filter(device_id==birds[j])
+    try(mfilter<-vmask(lat=Locs1$lat, lon=Locs1$lon, dtime=Locs1$datetime, vmax=25), silent=FALSE)
+    #if mfilter isn't made this makes one that selects all points 
+    if (exists("mfilter")==FALSE) mfilter<-rep("not", nrow(Locs1))
+    Locs1$mfilter<-mfilter
+    Locs<-Locs1%>%filter(mfilter!="removed")
+    locs<-rbind(locs,Locs)
+  }
+  
+  y_min<-min(locs$lat)-.25
+  y_max<-max(locs$lat)+.25
+  
+  x_min<-min(locs$lon)-.25
+  x_max<-max(locs$lon)+.25
   
   temp_plot<-ggplot()+
     geom_polygon(data=w2hr,aes(long,lat,group=group),fill="grey70",color="grey60",size=0.1)+
-    geom_path(data=birdies,aes(x=lon,y=lat, group=device_id))+
-    geom_point(data=birdies,aes(x=lon,y=lat, color=device_id), size=.1)+
+    geom_path(data=locs,aes(x=lon,y=lat, group=device_id))+
+    geom_point(data=locs,aes(x=lon,y=lat, color=device_id), size=.1)+
     xlab("Longitude")+
     ylab("Latitude")+
     coord_fixed(ratio=1.7,xlim = c(x_min,x_max),ylim=c(y_min,y_max))+
@@ -258,7 +280,7 @@ for (i in 1:length(IDs)){
     #theme(legend.title = element_blank(),
     #     legend.text = element_text(size=5))+
     #guides(color = guide_legend(override.aes = list(size = 2)))
-    #facet_wrap(~device_id, nrow=2)
+    #facet_wrap(~device_id)
   ggsave(temp_plot,filename = paste0(savedir,"/1wk_map_",IDs[i],".png"),height=4,width=8,device = "png")
 }
 
