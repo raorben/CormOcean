@@ -27,12 +27,11 @@ source('/home/DASHCAMS/git/CormOcean/MakeDive.R')
 #}
 
 if(Sys.info()[7]=="rachaelorben") {
-  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp_data/'
+  datadir<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/ornitela_ftp_data/'
   savedir<-'/Users/rachaelorben/zTagStatus/'
-  deplymatrix<-'/Users/rachaelorben/Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
+  deplymatrix<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
   source('/Users/rachaelorben/git_repos/CormOcean/MakeDive.R')
 }
-
 
 #  Pulls in deployment matrix ---------------------------------------------
 deploy_matrix<-read.csv(deplymatrix)
