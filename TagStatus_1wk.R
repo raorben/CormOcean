@@ -56,10 +56,13 @@ Files<-Files2[Files2 %in% Files1 == FALSE] #I think this should remove empty fil
 sel_files<-NULL
 for (i in 1:length(Files)){
   nL <- countLines(paste0(datadir,Files[i]))
-  dfh <- read.csv(paste0(datadir,Files[i]), header=TRUE, nrows = 0)
-  df <- read.csv(paste0(datadir,Files[i]), header=FALSE, skip=nL-1)
+  dfh <- read.csv(paste0(datadir,Files[i]), header=TRUE, nrows = 0,  skipNul=TRUE)
+  df<-dfh[nL-1,]
+  #df <- read.csv(paste0(datadir,Files[i]), header=FALSE, skip=nL-1)
   names(df)<-names(dfh)
-  df$UTC_datetime<-ymd_hms(df$UTC_datetime)
+  info<-str_locate(df$UTC_datetime[1], "/")
+  if(is.na(info[1])==FALSE){df$UTC_datetime<-mdy_hm(df$UTC_datetime)}
+  if(is.na(info[1])==TRUE){df$UTC_datetime<-ymd_hms(df$UTC_datetime)}
   today<-.POSIXct(Sys.time(), "UTC")
   if(df$UTC_datetime[1]>today-604800){sel_files<-c(sel_files,Files[i])} #selects files with a last date within 7 days of today
 }
