@@ -68,7 +68,7 @@ MakeDive<-function(tracks,
     # Print bird number
     print(BirdSub$ID[1])
     
-    # Find consecuatively recorded dive data
+    # Find consecutively recorded dive data
     BirdSub<- BirdSub %>%
       mutate(gap_time=tdiff>TimeDiffAllowed_sec, # find times when there is a gap > 60 minutes
              gap_time=ifelse(is.na(gap_time),0,gap_time), #fill NAs
