@@ -211,31 +211,31 @@ for (i in 1:length(IDs)){
   
   temp_plot<-ggplot()+
     #depth=blue
-    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=vectoral_sum),color="darkturquoise",linewidth=.01)+
+    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=vectoral_sum),color="darkturquoise",size=.01)+
     geom_point(data=birdy%>%filter(is.na(depth_m)==FALSE)%>%filter(depth_m!=0),
-               aes(x=datetime,y=-depth_m),linewidth=.01, color="blue")+
-    geom_point(data=dsum%>%filter(ID==IDs[i]),aes(x=datetime,y=n), linewidth=3,alpha=.5, color="blue")+
+               aes(x=datetime,y=-depth_m),size=.01, color="blue")+
+    geom_point(data=dsum%>%filter(ID==IDs[i]),aes(x=datetime,y=n), size=3,alpha=.5, color="blue")+
     #lat=black
-    geom_point(data=birdy,aes(x=datetime,y=abs(lat)),linewidth=.01, color="black")+
-    geom_point(data=birdy%>%filter(GPS_surfacedrifts==1),aes(x=datetime,y=abs(lat)+5),linewidth=.02, color="darkgreen")+
+    geom_point(data=birdy,aes(x=datetime,y=abs(lat)),size=.01, color="black")+
+    geom_point(data=birdy%>%filter(GPS_surfacedrifts==1),aes(x=datetime,y=abs(lat)+5),size=.02, color="darkgreen")+
     #temperature=purple
     geom_point(data=birdy%>%filter(ext_temperature_C<100)%>%filter(ext_temperature_C>0),
-               aes(x=datetime,y=ext_temperature_C),linewidth=.01,color="purple")+
+               aes(x=datetime,y=ext_temperature_C),size=.01,color="purple")+
     #conductivity=
     geom_point(data=birdy%>%filter(is.na(conductivity_mS.cm)==FALSE),
-               aes(x=datetime,y=(conductivity_mS.cm)),linewidth=.01,color="orange")+
+               aes(x=datetime,y=(conductivity_mS.cm)),size=.01,color="orange")+
     #battery=red
     geom_path(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="grey")+
-    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="red",linewidth=.01)+
+    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="red",size=.01)+
     #solar=yellow
-    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=solar_I_mA+101),color="goldenrod2",linewidth=.01)+
+    geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=solar_I_mA+101),color="goldenrod2",size=.01)+
     scale_x_datetime(date_labels = "%b %d") +
     geom_text(data = labs, angle = 90, linewidth=2,# add rotated text near y-axis
               aes(x = dt, y = y, label = title_wd, color = title_wd)) +
     scale_color_manual(values=c("red","orange","blue" ,"darkgreen","black","goldenrod2","purple","darkturquoise")) +
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
-    guides(color = guide_legend(override.aes = list(linewidth = 5)))
+    guides(color = guide_legend(override.aes = list(size = 5)))
   ggsave(temp_plot,filename = paste0(savedir,"/1wks_",birdy$DeployEndShort[1],birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
          height=4,width=8,device = "png")
 }
@@ -272,7 +272,7 @@ for (i in 1:length(IDs)){
   temp_plot<-ggplot()+
     geom_polygon(data=w2hr,aes(long,lat,group=group),fill="grey70",color="grey60",linewidth=0.1)+
     geom_path(data=locs,aes(x=lon,y=lat, group=device_id))+
-    geom_point(data=locs,aes(x=lon,y=lat, color=device_id), linewidth=.1)+
+    geom_point(data=locs,aes(x=lon,y=lat, color=device_id), size=.1)+
     xlab("Longitude")+
     ylab("Latitude")+
     coord_fixed(ratio=1.7,xlim = c(x_min,x_max),ylim=c(y_min,y_max))+
