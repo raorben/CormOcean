@@ -231,7 +231,7 @@ for (i in 1:length(IDs)){
     geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=solar_I_mA+101),color="goldenrod2",size=.01)+
     scale_x_datetime(date_labels = "%b %d") +
     geom_text(data = labs, angle = 90, linewidth=2,# add rotated text near y-axis
-              aes(x = dt, y = y, label = title_wd, color = title_wd)) +
+              aes(x = dt, y = y, label = title_wd, color = title_wd, size=8)) +
     scale_color_manual(values=c("red","orange","blue" ,"darkgreen","black","goldenrod2","purple","darkturquoise")) +
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
@@ -251,7 +251,7 @@ for (i in 1:length(IDs)){
   birdies<-Birds_gps[Birds_gps$Project_ID==IDs[i],]
   birds<-droplevels(unique(birdies$device_id))
   
-  locs<-birds
+  locs<-birdies
   # locs<-NULL
   # for (j in 1:length(birds)){
   #   Locs1<-birdies%>%filter(device_id==birds[j])
