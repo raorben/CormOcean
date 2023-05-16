@@ -19,7 +19,7 @@ if(Sys.info()[7]=="rachaelorben") {
   userdir<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/'
   savedir<-'Analysis/DataViz/'
   deplymatrix<-'data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
-  source('/Users/rachaelorben/git_repos/CormOcean/MakeDive.R')
+  #source('/Users/rachaelorben/git_repos/CormOcean/MakeDive.R')
 }
 
 #adjust with your info
@@ -27,14 +27,15 @@ if(Sys.info()[7]=="Jessica") {
   userdir<-'/Users/jessica/Library/CloudStorage/Box-Box/DASHCAMS/'
   savedir<-'Analysis/DataViz/'
   deplymatrix<-'data/Field Data/DASHCAMS_Deployment_Field_Data.csv'  
-  source('/Users/jessica/git_repos/CormOcean/MakeDive.R')
+  #source('/Users/jessica/git_repos/CormOcean/MakeDive.R')
 }
 
 # Pulls in deployment matrix ---------------------------------------------
 # only birds in the deployment matrix will be plotted
 deploy_matrix<-read.csv(paste0(userdir,deplymatrix))
 names(deploy_matrix)
-deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime,Deployment_End_Short,DeploymentEndDatetime_UTC)%>%
+deploy_matrix<-deploy_matrix%>%
+  select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime,Deployment_End_Short,DeploymentEndDatetime_UTC)%>%
   filter(is.na(TagSerialNumber)==FALSE)
 deploy_matrix$DeploymentStartDatetime<-mdy_hm(deploy_matrix$DeploymentStartDatetime)
 deploy_matrix$DeploymentEndDatetime_UTC<-mdy_hm(deploy_matrix$DeploymentEndDatetime_UTC)
@@ -43,15 +44,13 @@ head(deploy_matrix)
 
 # Pulls in GPS data only --------------------------------------------------
 #should be from Box, but the 13GB file in the processed folder prohibits selective syncing of that folder. 
-#dat<-read.csv(paste0(savedir,"ornitela_gps.csv"))
+#dat<-read.csv(paste0(userdir,"processed/ornitela_gps.csv"))
 dat<-read.csv("/Users/rachaelorben/Desktop/ornitela_gps.csv") 
-dat<-dat%>%filter(lon<180)%>%filter(lat!=0) #removes one crazy lon value + 23k 0,0 GPS values
-
+dat<-dat%>%filter(lon<180)%>%filter(lat!=0) #removes one crazy lon value + 23k of 0,0 GPS values
 dat$datetime<-dmy_hms(dat$time)
 head(dat)
 
 IDS<-unique(dat$id)
-
 DAT<-NULL
 for (i in 1:length(IDS)){
 
