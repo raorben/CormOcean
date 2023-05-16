@@ -6,6 +6,9 @@ library(stringr)
 library(R.utils)
 library(tidyr)
 library(argosfilter)
+library(sf)
+library(MetBrewer)
+library(cowplot)
 
 wrap360 = function(lon) {
   lon360<-ifelse(lon<0,lon+360,lon)
@@ -13,15 +16,23 @@ wrap360 = function(lon) {
 }
 
 if(Sys.info()[7]=="rachaelorben") {
-  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/ornitela_ftp_data/'
-  savedir<-'/Users/rachaelorben/Box/DASHCAMS/data/Processed/'
-  deplymatrix<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
+  userdir<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/'
+  savedir<-'Analysis/DataViz/'
+  deplymatrix<-'data/Field Data/DASHCAMS_Deployment_Field_Data.csv'
   source('/Users/rachaelorben/git_repos/CormOcean/MakeDive.R')
+}
+
+#adjust with your info
+if(Sys.info()[7]=="Jessica") { 
+  userdir<-'/Users/jessica/Library/CloudStorage/Box-Box/DASHCAMS/'
+  savedir<-'Analysis/DataViz/'
+  deplymatrix<-'data/Field Data/DASHCAMS_Deployment_Field_Data.csv'  
+  source('/Users/jessica/git_repos/CormOcean/MakeDive.R')
 }
 
 # Pulls in deployment matrix ---------------------------------------------
 # only birds in the deployment matrix will be plotted
-deploy_matrix<-read.csv(deplymatrix)
+deploy_matrix<-read.csv(paste0(userdir,deplymatrix))
 names(deploy_matrix)
 deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,DeploymentStartDatetime,Deployment_End_Short,DeploymentEndDatetime_UTC)%>%
   filter(is.na(TagSerialNumber)==FALSE)
@@ -100,21 +111,16 @@ for (j in 1:length(birds)){
 }
 
 head(locs)
-
-saveRDS(locs, "/Users/rachaelorben/Desktop/GPS_SpeedFiltered.rds")
-summary(Locs1)
-
+saveRDS(locs, paste0(userdir,savedir,"GPS_SpeedFiltered.rds"))
 
 unique(locs$Project_ID)
 
 
 # Maps --------------------------------------------------------------------
 w2hr<-map_data('world')
-library(sf)
-library(MetBrewer)
 
 locs_wgs84<-st_as_sf(locs,coords=c('lon','lat'),remove = F,crs = 4326)
-
+dt=Sys.Date()
 #quartz()
 ggplot()+
   geom_polygon(data=w2hr,aes(long,lat,group=group),fill="gray60",color="grey25",size=0.1)+
@@ -122,8 +128,9 @@ ggplot()+
   scale_color_manual(values=met.brewer("Johnson", 18))+
   theme_bw()+
   theme(legend.position ="none",axis.title = element_blank())
-ggsave("/Users/rachaelorben/Desktop/WorldCormorants.png", dpi=300)
+ggsave(paste0(userdir,savedir,"WorldCormorants_",dt,".png"), dpi=300)
 
+#the rest of the code is under constuction...
 WORLD<-ggplot()+
   geom_polygon(data=w2hr,aes(long,lat,group=group),fill="gray25",color="grey60",size=0.1)+
   geom_sf(data = locs_wgs84, color="orange", size=.3)+
@@ -191,7 +198,7 @@ USA<-ggplot()+
         axis.text = element_text(size = 4))
 ggsave("/Users/rachaelorben/Desktop/USA.png", dpi=300)
 
-library(cowplot)
+
 p1<-plot_grid(USA, width=2)
 p2<-plot_grid(PERU, width=2)
 p1<-plot_grid(USA, PERU,rel_widths = c(1,1),
