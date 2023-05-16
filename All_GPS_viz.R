@@ -91,7 +91,7 @@ if(length(bid_num)>3) {break} #we don't have any tags that have been on four bir
 
 unique(DAT$Project_ID)
 
-# speed filter ------------------------------------------------------------
+# weak speed filter ------------------------------------------------------------
 DAT$Uni_ID<-paste0(DAT$Project_ID,"_",DAT$Bird_ID)
 
 birds<-unique(DAT$Uni_ID)
@@ -110,7 +110,7 @@ for (j in 1:length(birds)){
 }
 
 head(locs)
-saveRDS(locs, paste0(userdir,savedir,"GPS_SpeedFiltered.rds"))
+#saveRDS(locs, paste0(userdir,savedir,"GPS_SpeedFiltered.rds"))
 
 unique(locs$Project_ID)
 
