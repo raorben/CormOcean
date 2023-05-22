@@ -139,20 +139,21 @@ Birds_dpth_MD<-MakeDive(Birds_dpth,idCol=id_num, #column index with unique ID
 Birds_dpth_MD$date<-date(Birds_dpth$datetime)
 Birds_dpth_MD$datatype<-Birds_dpth$datatype
 
-dive_sum<-Birds_dpth_MD%>%group_by(ID,divedatYN)%>% #individual dive summaries
-  summarise(date=date(datetime),
-            n=n_distinct(divedatYN),
-            minDt=min(datetime),
+dive_sum<-Birds_dpth_MD%>%
+  group_by(ID,divedatYN,)%>% #individual dive summaries
+  dplyr::summarise(minDt=min(datetime),
             maxDt=max(datetime),
             maxDepth=max(depth,na.rm=TRUE),
             uDepth=round(mean(depth,na.rm=TRUE),2))%>%
-  mutate(dur=maxDt-minDt)
+  mutate(dur=maxDt-minDt,
+         date=date(minDt))
 
-#matches dive with GPS points
+#matches dive with GPS points 
 IDS<-unique(dive_sum$ID)
 dive_sum_gps<-NULL
 for (i in 1:length(IDS)){
   birdy<-Birds_gps%>%filter(tagID==IDS[i])
+  birdy$gps_oid<-1:nrow(birdy)
   bdive<-dive_sum%>%filter(ID==IDS[i])
   
   dt<-unique(bdive$date)
@@ -161,21 +162,27 @@ for (k in 1:length(dt)){
     birdy_dt<-birdy%>%filter(UTC_date==dt[k])
     bdive_dt<-bdive%>%filter(date==dt[k])
 
-for (j in 1:nrow(bdive_dt)){
     bdive_dt$gps_tdiff<-NA
     bdive_dt$lat<-NA
     bdive_dt$lon<-NA
-  
+    bdive_dt$gps_datatype<-NA
+    bdive_dt$gps_oid<-NA
+    bdive_dt$gps_time<-NA
+for (j in 1:nrow(bdive_dt)){
     birdy_dt$gpstd<-(abs(birdy_dt$datetime-bdive_dt$minDt[j]))
     sm<-min(abs(birdy_dt$gpstd))
     idx<-which(abs(birdy_dt$gpstd)==sm)
   
     bdive_dt$gps_tdiff[j]<-sm
-    bdive_dt$lat<-birdy_dt$lat[idx]
-    bdive_dt$lon<-birdy_dt$lon[idx]
+    bdive_dt$lat[j]<-birdy_dt$lat[idx]
+    bdive_dt$lon[j]<-birdy_dt$lon[idx]
+    bdive_dt$gps_datatype[j]<-birdy_dt$datatype[idx]
+    bdive_dt$gps_oid[j]<-birdy_dt$gps_oid[idx]
+    bdive_dt$gps_time[j]<-birdy_dt$datetime[idx]
 }
-bdive_all<-rbind(bdive_all,bdive_dt)  
+    bdive_all<-rbind(bdive_all,bdive_dt)     
 }
+
 dive_sum_gps<-rbind(dive_sum_gps,bdive_all)  
 }
 
