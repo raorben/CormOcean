@@ -2,7 +2,12 @@ library(data.table) #fread
 library(dplyr)
 library(ggplot2)
 
-Files<-list.files("/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/2014_MCR/2014/GPS_TDR_DATA_SYNC/", 
+
+if(Sys.info()[7]=="rachaelorben") {
+  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/'
+}
+
+Files<-list.files(paste0(datadir,"/2014_MCR/2014/GPS_TDR_DATA_SYNC/"),
                   pattern = ".csv",full.names = TRUE)
 
 DAT<-NULL
@@ -24,7 +29,7 @@ DAT.d<-DAT%>%filter(is.na(ObsDepth)==FALSE)
 max(DAT.d$CalDepth)
 
 ggplot()+
-  geom_path(data=DAT, aes(x=LongDegree,y=LatDegree, group=BirdID, color=species))
-
+  geom_path(data=DAT, aes(x=LongDegree,y=LatDegree, group=BirdID, color=species))+
+  facet_wrap(~species)
 
 
