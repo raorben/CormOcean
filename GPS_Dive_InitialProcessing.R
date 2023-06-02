@@ -41,21 +41,27 @@ deploy_matrix<-deploy_matrix%>%select(Bird_ID,TagSerialNumber,Project_ID,Deploym
   filter(is.na(TagSerialNumber)==FALSE)
 unique(deploy_matrix$Project_ID)
 
-(NZdm<-deploy_matrix%>%filter(Project_ID=="NZEHGSP23"))
+(dm<-deploy_matrix%>%filter(Project_ID=="NZEHGSP23"))
+(dm<-deploy_matrix%>%filter(Project_ID=="SOUDICA22"))
 
 #  Pulls downloaded data files ---------------------------------------------
 Files<-list.files("/Users/rachaelorben/Desktop/NZ", full.names = TRUE)
 filenames<-list.files("/Users/rachaelorben/Desktop/NZ")
+
+Files<-list.files("/Users/rachaelorben/Desktop/SA", full.names = TRUE)
+filenames<-list.files("/Users/rachaelorben/Desktop/SA")
+
 
 locs<-NULL
 for (i in 1:length(Files)){
   
     tagID<-sapply(strsplit(filenames[i], split='_', fixed=TRUE), function(x) (x[1]))
     
-    deply_sel<-NZdm[NZdm$TagSerialNumber==tagID[1],]
+    deply_sel<-dm[dm$TagSerialNumber==tagID[1],]
     
     dat <- read.csv(Files[i], header=TRUE, nrows = 0,  skipNul=TRUE)
     
+    unique(dat$datatype)
     dat<-dat%>%filter(datatype!="SEN_ACC_5Hz_START")%>% #removes surface accelerometry
       filter(datatype!="SEN_ACC_5Hz")%>%
       filter(datatype!="SEN_ACC_5Hz_ENDINT")%>%
@@ -67,6 +73,8 @@ for (i in 1:length(Files)){
     
     dat$Project_ID<-deply_sel$Project_ID
     dat$tagID<-tagID
+    
+    dat<-dat%>%filter(UTC_timestamp>deply_sel$DeploymentStartDatetime & UTC_timestamp<deply_sel$DeploymentEndDatetime_UTC)
     dat$DeployEndShort<-deply_sel$Deployment_End_Short
     
     dat[is.na(dat)==TRUE]<-NA
@@ -132,7 +140,7 @@ Birds_dpth_MD<-MakeDive(Birds_dpth,idCol=id_num, #column index with unique ID
                      depthCol=dp_num, #column index with depth
                      tdiffCol=td_num, #column index with time difference in seconds
                      DepthCutOff=1, #depth that dives happen below (meters)
-                     DiveDepthYes=2, #dives need to reach 3 meters to be considered a dive event
+                     DiveDepthYes=1.5, #dives need to reach 3 meters to be considered a dive event
                      TimeDiffAllowed_sec=2, #consecutive points need to have a time difference <2 to be in the same event
                      NumLocCut=2) #dives need to contain three points to be considered a dive, could change this to a duration
 
@@ -147,6 +155,7 @@ dive_sum<-Birds_dpth_MD%>%
             uDepth=round(mean(depth,na.rm=TRUE),2))%>%
   mutate(dur=maxDt-minDt,
          date=date(minDt))
+
 
 #matches dive with GPS points 
 IDS<-unique(dive_sum$ID)
@@ -169,11 +178,11 @@ for (k in 1:length(dt)){
     bdive_dt$gps_oid<-NA
     bdive_dt$gps_time<-NA
 for (j in 1:nrow(bdive_dt)){
-    birdy_dt$gpstd<-(abs(birdy_dt$datetime-bdive_dt$minDt[j]))
+    birdy_dt$gpstd<-(abs(birdy_dt$datetime-bdive_dt$maxDt[j]))
     sm<-min(abs(birdy_dt$gpstd))
     idx<-which(abs(birdy_dt$gpstd)==sm)
   
-    bdive_dt$gps_tdiff[j]<-sm
+    bdive_dt$gps_tdiff[j]<-birdy_dt$datetime[idx]-bdive_dt$maxDt[j]
     bdive_dt$lat[j]<-birdy_dt$lat[idx]
     bdive_dt$lon[j]<-birdy_dt$lon[idx]
     bdive_dt$gps_datatype[j]<-birdy_dt$datatype[idx]
@@ -207,6 +216,74 @@ sumDat<-locs%>%group_by(tagID)%>%
   mutate(dur=round(maxDt-minDt,2)) 
 
 
-write.csv(x=dive_sum, paste0("/Users/rachaelorben/Desktop/NZ","/DiveSum.csv"))
+#write.csv(x=dive_sum, paste0("/Users/rachaelorben/Desktop/NZ","/DiveSum.csv"))
+write.csv(x=dive_sum, paste0("/Users/rachaelorben/Desktop/SA","/DiveSum.csv"))
 
-          
+
+w2hr<-map_data('world')
+
+y_min<-min(Birds_gps$lat)-.25
+y_max<-max(Birds_gps$lat)+.25
+
+x_min<-min(Birds_gps$lon)-.25
+x_max<-max(Birds_gps$lon)+.25
+
+quartz(width=5,height=4)
+ggplot()+
+  geom_polygon(data=w2hr,aes(long,lat,group=group),fill="grey70",color="grey60",linewidth=0.1)+
+  geom_path(data=Birds_gps,aes(x=lon,y=lat, group=device_id))+
+  geom_point(data=Birds_gps,aes(x=lon,y=lat, color=datatype))+
+  xlab("Longitude")+
+  ylab("Latitude")+
+  coord_fixed(ratio=1.7,xlim = c(x_min,x_max),ylim=c(y_min,y_max))+
+  theme_bw()
+ggsave(filename = paste0("/Users/rachaelorben/Desktop/SA/GPSplot.jpg"))
+
+
+names(Birds_dpth_MD)
+Birds_gps$Pt<-1
+
+
+Birds_dpth_MD<-cbind(Birds_dpth_MD,ext_temperature_C=Birds_dpth$ext_temperature_C)
+quartz(width=12,height=3)
+ggplot()+
+  geom_point(data=Birds_gps,aes(x=datetime,y=Pt, color=datatype))+
+  geom_path(data=Birds_dpth_MD%>%filter(is.na(divedatYN)==FALSE),
+            aes(x=datetime,y=-depth, group=divedatYN))+
+  geom_point(data=Birds_dpth_MD%>%filter(is.na(divedatYN)==FALSE),
+             aes(x=datetime,y=-depth, fill=ext_temperature_C, group=divedatYN), shape = 21)+
+  theme_bw()+
+  ylab("Depth (m)")+
+  xlab("")+
+  NULL
+ggsave(filename = paste0("/Users/rachaelorben/Desktop/SA/DiveData.jpg"))
+
+names(Birds_dpth_MD)
+quartz(width=12,height=3)
+ggplot()+
+  geom_point(data=Birds_gps%>%filter(UTC_date=="2022-12-05"),
+             aes(x=datetime,y=Pt, color=datatype))+
+  geom_path(data=Birds_dpth_MD%>%filter(is.na(divedatYN)==FALSE)%>%filter(date=="2022-12-05"),
+            aes(x=datetime,y=-depth, group=divedatYN))+
+  geom_point(data=Birds_dpth_MD%>%filter(is.na(divedatYN)==FALSE)%>%filter(date=="2022-12-05"),
+             aes(x=datetime,y=-depth, fill=ext_temperature_C, group=divedatYN), shape = 21)+
+  theme_bw()+
+  ylab("Depth (m)")+
+  xlab("")+
+  NULL
+ggsave(filename = paste0("/Users/rachaelorben/Desktop/SA/DiveData_12-5.jpg"))
+
+quartz(width=12,height=3)
+ggplot()+
+  geom_point(data=Birds_gps%>%filter(UTC_date=="2022-12-06"),
+             aes(x=datetime,y=Pt, color=datatype))+
+  geom_path(data=Birds_dpth_MD%>%filter(is.na(divedatYN)==FALSE)%>%filter(date=="2022-12-06"),
+            aes(x=datetime,y=-depth, group=divedatYN))+
+  geom_point(data=Birds_dpth_MD%>%filter(is.na(divedatYN)==FALSE)%>%filter(date=="2022-12-06"),
+             aes(x=datetime,y=-depth, fill=ext_temperature_C, group=divedatYN), shape = 21)+
+  theme_bw()+
+  ylab("Depth (m)")+
+  xlab("")+
+  NULL
+ggsave(filename = paste0("/Users/rachaelorben/Desktop/SA/DiveData_12-6.jpg"))
+

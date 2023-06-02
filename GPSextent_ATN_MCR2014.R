@@ -4,7 +4,7 @@ library(ggplot2)
 
 
 if(Sys.info()[7]=="rachaelorben") {
-  datadir<-'/Users/rachaelorben/Box/DASHCAMS/data/'
+  datadir<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/'
 }
 
 Files<-list.files(paste0(datadir,"/2014_MCR/2014/GPS_TDR_DATA_SYNC/"),
@@ -12,24 +12,25 @@ Files<-list.files(paste0(datadir,"/2014_MCR/2014/GPS_TDR_DATA_SYNC/"),
 
 DAT<-NULL
 for (j in 1:length(Files)){
-  dat<-fread(file=Files[j],stringsAsFactors=FALSE,sep = ",",fill=TRUE) 
-  dat<-dat%>%filter(is.na(LatDegree)==FALSE)
+  dat<-read.csv(file=Files[j],stringsAsFactors=FALSE,sep = ",",fill=TRUE) 
+  #dat<-dat%>%filter(is.na(LatDegree)==FALSE)
   dat<-dat%>%select(BirdID,LatDegree,LongDegree,ObsDepth,CalDepth)
   DAT<-rbind(DAT,dat)
 }
 DAT$species<-sapply(strsplit(DAT$BirdID, split='_', fixed=TRUE), function(x) (x[1]))
 
-min(DAT$LatDegree)
-max(DAT$LatDegree)
+min(DAT$LatDegree, na.rm=TRUE)
+max(DAT$LatDegree, na.rm=TRUE)
 
-min(DAT$LongDegree)
-max(DAT$LongDegree)
+min(DAT$LongDegree, na.rm=TRUE)
+max(DAT$LongDegree, na.rm=TRUE)
 
-DAT.d<-DAT%>%filter(is.na(ObsDepth)==FALSE)
-max(DAT.d$CalDepth)
+max(abs(DAT$CalDepth), na.rm =TRUE)
 
 ggplot()+
-  geom_path(data=DAT, aes(x=LongDegree,y=LatDegree, group=BirdID, color=species))+
-  facet_wrap(~species)
+  geom_path(data=DAT%>%filter(is.na(LatDegree)==FALSE), 
+            aes(x=LongDegree,y=LatDegree, group=BirdID, color=species))+
+  #facet_wrap(~species)+
+  NULL
 
 
