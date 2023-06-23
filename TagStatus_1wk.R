@@ -236,7 +236,7 @@ for (i in 1:length(IDs)){
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
     guides(color = guide_legend(override.aes = list(size = 5)))
-  ggsave(temp_plot,filename = paste0(savedir,"/1wks_",birdy$DeployEndShort[1],"_",birdy$Project_ID[1],"_",IDs[i],"_AllDataStreams.png"),
+  ggsave(temp_plot,filename = paste0(savedir,"/1wks_",birdy$Project_ID[1],"_",birdy$DeployEndShort[1],"_",IDs[i],"_AllDataStreams.png"),
          height=4,width=8,device = "png")
 }
 
