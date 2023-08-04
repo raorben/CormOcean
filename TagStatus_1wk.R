@@ -6,25 +6,27 @@ library(stringr)
 library(R.utils)
 library(tidyr)
 
-if(require("argosfilter")==FALSE) install.packages("argosfilter")
-library(argosfilter)
+#if(require("argosfilter")==FALSE) install.packages("argosfilter")
+#library(argosfilter)
 
 # Link to local Box Sync folder ---- 
 #To find user/computer specific username use: Sys.getenv("LOGNAME")
 
-if(Sys.info()[4]=="benthos") {
-args = commandArgs(trailingOnly=TRUE)
-datadir<-args[1] #/home/DASHCAMS/data/ornitela_ftp_data/
-deplymatrix<-args[2] #/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv
-savedir<-args[3] #/home/DASHCAMS/zTagStatus/
-source('/home/DASHCAMS/git/CormOcean/MakeDive.R') 
-}
+# if(Sys.info()[4]=="benthos") {
+# args = commandArgs(trailingOnly=TRUE)
+# datadir<-args[1] #/home/DASHCAMS/data/ornitela_ftp_data/
+# deplymatrix<-args[2] #/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv
+# savedir<-args[3] #/home/DASHCAMS/zTagStatus/
+# source('/home/DASHCAMS/git/CormOcean/MakeDive.R')
+# }
 
-#if(Sys.info()[4]=="benthos") {
-#  datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp_data/'
-#  savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
-#  deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_data.csv'
-#}
+if(Sys.info()[4]=="benthos") {
+datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp/'
+savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
+deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_Data.csv'
+savedir<-'/home/DASHCAMS/zTagStatus/'
+source('/home/DASHCAMS/git/CormOcean/MakeDive.R')
+}
 
 if(Sys.info()[7]=="rachaelorben") {
   datadir<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/ornitela_ftp_data/'
