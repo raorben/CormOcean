@@ -24,7 +24,6 @@ if(Sys.info()[4]=="benthos") {
 datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp/'
 savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
 deplymatrix<-'/home/DASHCAMS/data_raw/metadata/DASHCAMS_Deployment_Field_Data.csv'
-savedir<-'/home/DASHCAMS/zTagStatus/'
 source('/home/DASHCAMS/git/CormOcean/MakeDive.R')
 }
 
@@ -190,7 +189,7 @@ SUMDAT[SUMDAT==-Inf]<-NA
 SUMDAT <- SUMDAT %>%
   select(DeployEndShort, everything())
 
-write.csv(x=SUMDAT,file = paste0(savedir,"/1WeekStats_",date(today),".csv"))
+write.csv(x=SUMDAT,file = paste0(savedir,"1WeekStats_",date(today),".csv"))
 
 # error checking plots ----------------------------------------------------
 dt<-Sys.time()
@@ -238,7 +237,7 @@ for (i in 1:length(IDs)){
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
     guides(color = guide_legend(override.aes = list(size = 5)))
-  ggsave(temp_plot,filename = paste0(savedir,"/1wks_",birdy$Project_ID[1],"_",birdy$DeployEndShort[1],"_",IDs[i],"_AllDataStreams.png"),
+  ggsave(temp_plot,filename = paste0(savedir,"1wks_",birdy$Project_ID[1],"_",birdy$DeployEndShort[1],"_",IDs[i],"_AllDataStreams.png"),
          height=4,width=8,device = "png")
 }
 
