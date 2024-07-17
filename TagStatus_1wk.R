@@ -65,6 +65,7 @@ for (i in 1:length(Files)){
   if(is.na(info[1])==FALSE){df$UTC_datetime<-mdy_hm(df$UTC_datetime)}
   if(is.na(info[1])==TRUE){df$UTC_datetime<-ymd_hms(df$UTC_datetime)}
   today<-.POSIXct(Sys.time(), "UTC")
+  if(is.na(df$UTC_datetime[1])==TRUE){next}
   if(df$UTC_datetime[1]>today-604800){sel_files<-c(sel_files,Files[i])} #selects files with a last date within 7 days of today
 }
 
