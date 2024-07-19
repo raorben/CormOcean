@@ -227,13 +227,13 @@ for (i in 1:length(IDs)){
     geom_point(data=dsum%>%filter(ID==IDs[i]),aes(x=datetime,y=n), size=3,alpha=.5, color="blue")+
     #lat=black
     geom_point(data=birdy,aes(x=datetime,y=abs(lat)),size=.01, color="black")+
-    geom_point(data=birdy%>%filter(GPS_surfacedrifts==1),aes(x=datetime,y=abs(lat)+5),size=.02, color="darkgreen")+
     #temperature=purple
     geom_point(data=birdy%>%filter(ext_temperature_C<100)%>%filter(ext_temperature_C>0),
                aes(x=datetime,y=ext_temperature_C),size=.01,color="purple")+
     #conductivity=
     geom_point(data=birdy%>%filter(is.na(conductivity_mS.cm)==FALSE),
                aes(x=datetime,y=(conductivity_mS.cm)),size=.01,color="orange")+
+    geom_point(data=birdy%>%filter(GPS_surfacedrifts==1),aes(x=datetime,y=abs(lat)+5),size=.02, color="green3")+
     #battery=red
     geom_path(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="grey")+
     geom_point(data=birdy%>%filter(is.na(lat)==FALSE),aes(x=datetime,y=bat_soc_pct),color="red",size=.01)+
