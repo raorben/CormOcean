@@ -133,7 +133,8 @@ for (i in 1:length(sel_files)){
 
 
 #remove duplicate GPS points 
-Birds<-Birds%>%group_by(device_id,datetime)%>%
+Birds<-Birds%>%
+  group_by(device_id,datetime)%>%
   distinct(device_id,datetime, .keep_all = TRUE)%>%
   arrange(datetime) #arranges by time, could scramble data >1HZ a little bit
 
@@ -200,10 +201,17 @@ Birds$vectoral_sum<-((Birds$acc_x^2+Birds$acc_y^2+Birds$acc_z^2)^0.5)*.1 #should
 
 dsum$datetime<-ymd_hms(paste(dsum$date,"23:59:00"))
 
-IDs<-unique(Birds$device_id)
+pjrs<-unique(Birds$Project_ID)
+pjrs<-pjrs[is.na(pjrs)==FALSE]
+
+for (j in 1:length(pjrs)){
+  
+  BirdsP<-Birds%>%filter(Project_ID==pjrs[j])
+  
+IDs<-unique(BirdsP$device_id)
 for (i in 1:length(IDs)){
   
-  birdy<-Birds[Birds$device_id==IDs[i],]
+  birdy<-Birds%>%filter(device_id==IDs[i])
   Mdt<-min(birdy$datetime)
   
   labs <- data.frame(variable = c("a", "b","bb","c","d","e","f","g"), 
@@ -234,12 +242,13 @@ for (i in 1:length(IDs)){
     scale_x_datetime(date_labels = "%b %d") +
     geom_text(data = labs, angle = 45, size=4,# add rotated text near y-axis
               aes(x = dt, y = y, label = title_wd, color = title_wd)) +
-    scale_color_manual(values=c("red","orange","blue" ,"darkgreen","black","goldenrod2","purple","darkturquoise")) +
+    scale_color_manual(values=c("red","orange","blue" ,"green3","black","goldenrod2","purple","darkturquoise")) +
     ylab("")+ # hide default y-axis label
     theme(legend.position = "none")+
     guides(color = guide_legend(override.aes = list(size = 5)))
   ggsave(temp_plot,filename = paste0(savedir,"1wks_",birdy$Project_ID[1],"_",birdy$DeployEndShort[1],"_",IDs[i],"_AllDataStreams.png"),
          height=4,width=8,device = "png")
+}
 }
 
 #map location, color by date
