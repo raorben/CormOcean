@@ -4,7 +4,6 @@ library(dplyr)
 library(data.table) #rename
 library(stringr)
 library(R.utils)
-library(tidyr)
 
 #if(require("argosfilter")==FALSE) install.packages("argosfilter")
 #library(argosfilter)
@@ -29,10 +28,13 @@ source('/home/DASHCAMS/git/CormOcean/MakeDive.R')
 
 if(Sys.info()[7]=="rachaelorben") {
   datadir<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/ornitela_ftp_data/'
-  savedir<-'/Users/rachaelorben/zTagStatus/'
+  savedir<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/zTagStatus/'
   deplymatrix<-'/Users/rachaelorben/Library/CloudStorage/Box-Box/DASHCAMS/data/Field Data/Deployment_Field_Data.csv'
   source('/Users/rachaelorben/git_repos/CormOcean/MakeDive.R')
 }
+
+min.na = function(x) if (all(is.na(x))) x[NA_integer_] else min(x, na.rm = TRUE)
+max.na = function(x) if (all(is.na(x))) x[NA_integer_] else max(x, na.rm = TRUE)
 
 #  Pulls in deployment matrix ---------------------------------------------
 deploy_matrix<-read.csv(deplymatrix)
@@ -136,7 +138,7 @@ for (i in 1:length(sel_files)){
 Birds<-Birds%>%
   group_by(device_id,datetime)%>%
   distinct(device_id,datetime, .keep_all = TRUE)%>%
-  arrange(datetime) #arranges by time, could scramble data >1HZ a little bit
+  arrange(datetime, .by_group = TRUE) #arranges by time, could scramble data >1HZ a little bit
 
 
 # identify dives ----------------------------------------------------------
@@ -167,9 +169,9 @@ dsum_weekly<-dsum%>%group_by(ID)%>%
 
 # quick summary of the bird data
 sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
-  summarise(minDt=min(datetime),
-            maxDt=max(datetime),
-            maxDepth=max(depth_m,na.rm=TRUE),
+  summarise(minDt=min(datetime,na.rm=TRUE),
+            maxDt=max(datetime, na.rm=TRUE),
+            maxDepth=max.na(depth_m),
             uDepth=round(mean(depth_m,na.rm=TRUE),2),
             n_GPS=n_distinct(lat),
             uBat=round(mean(U_bat_mV,na.rm=TRUE)),
@@ -178,13 +180,15 @@ sumDat<-Birds%>%group_by(Project_ID,tagID,device_id)%>%
             GPS_surfacedrift_pts=sum(GPS_surfacedrifts))%>%
   mutate(dur=round(maxDt-minDt,2)) 
 
+
 sumDat<-left_join(sumDat,dsum_weekly,by=c("tagID"="ID"))
 
 dat_info<-Birds%>%
   group_by(tagID,datatype, DeployEndShort) %>%
   summarise(no_rows = length(datatype))
 
-wide_dat<-dat_info%>%pivot_wider(names_from = datatype, values_from = no_rows)
+wide_dat<-dat_info%>%
+  tidyr::pivot_wider(names_from = datatype, values_from = no_rows)
 SUMDAT<-left_join(sumDat,wide_dat,by="tagID")
 
 SUMDAT[SUMDAT==-Inf]<-NA
