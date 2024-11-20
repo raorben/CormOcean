@@ -20,10 +20,10 @@ library(R.utils)
 # }
 
 if(Sys.info()[4]=="benthos") {
-datadir<-'/home/DASHCAMS/data_raw/ornitela_ftp/'
-savedir<-'/home/DASHCAMS/data_processed/zTagStatus/'
-deplymatrix<-'/home/DASHCAMS/data_raw/metadata/Deployment_Field_Data.csv'
-source('/home/DASHCAMS/git/CormOcean/MakeDive.R')
+datadir<-'/home/benthos/DASHCAMS/data_raw/ornitela_ftp/'
+savedir<-'/home/benthos/DASHCAMS/data_processed/zTagStatus/'
+deplymatrix<-'/home/benthos/DASHCAMS/data_raw/metadata/Deployment_Field_Data.csv'
+source('/home/benthos/DASHCAMS/git/CormOcean/MakeDive.R')
 }
 
 if(Sys.info()[7]=="rachaelorben") {
